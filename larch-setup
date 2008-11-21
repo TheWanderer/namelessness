@@ -1,0 +1,125 @@
+#! /bin/bash
+#
+# larch-setup
+#
+# Author: Michael Towers <gradgrind[at]online[dot]de>
+#
+# This file is part of the larch project.
+#
+#    larch is free software; you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation; either version 2 of the License, or
+#    (at your option) any later version.
+#
+#    larch is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with larch; if not, write to the Free Software Foundation, Inc.,
+#    51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+#
+#----------------------------------------------------------------------------
+# 2008.09.14
+
+REPO="ftp://ftp.berlios.de/pub/larch/larch5.3/i686"
+#REPO=file://$( readlink -f larchrepo )
+
+if [ "$1" = "-h" ]; then
+    echo "larch-setup -h"
+    echo "        # Display this information."
+    echo "larch-setup"
+    echo "        # Set up a larch build environment in the current directory."
+    echo "        # x86_64 should be detected automatically."
+    echo
+    echo "This script unpacks larch, so that 'mklarch', etc.,"
+    echo "can be run from this directory, without installing."
+    echo "It also generates appropriate symlinks."
+    echo
+    echo "If there is no pacman in the PATH, a package containing the pacman"
+    echo "binary and the libraries it needs can be downloaded from the larch"
+    echo "site and a starter script placed in larch/run."
+    echo "Also repo-add is extracted there and a pacman.conf is generated in"
+    echo "the current directory, presenting a dialog for choosing the package"
+    echo "server."
+    echo "You can use an existing pacman.conf by placing this in the current"
+    echo "directory."
+    echo
+    exit
+fi
+
+sysarch="$( uname -m )"
+if [ "${sysarch}" != "x86_64" ]; then
+    sysarch="i686"
+fi
+
+# Get path to this directory, via the location of this script
+fullpath="$( readlink -f $0 )"
+scriptdir="$( dirname ${fullpath} )"
+
+# Just in case ...
+cd ${scriptdir}
+
+if [ -d larch ]; then
+    echo "ERROR: larch directory exists already"
+    exit 1
+fi
+
+fetch ()
+{
+    if [ -n "$( echo ${REPO} | grep "file://" )" ]; then
+        base="$( echo ${REPO} | sed "s|file://||" )"
+        cp ${base}/$1 .
+    else
+        wget ${REPO}/$1
+    fi
+}
+
+if ! [ -f larch-*.pkg.tar.gz ]; then
+    rm -rf tmp
+    mkdir tmp
+    cd tmp
+    fetch larch5.db.tar.gz
+    tar -xzf larch5.db.tar.gz
+    d=$( ls | grep "^larch-5" )
+    larchpak=$( grep -A 1 -e "%FILENAME%" ${d}/desc | grep -v "%" )
+    cd ${scriptdir}
+    fetch ${larchpak}
+fi
+
+rm -rf tmp
+mkdir tmp
+tar -xzf larch-5*.pkg.tar.gz -C tmp
+mv tmp/opt/larch .
+rm -rf tmp
+
+ln -s larch/run/mklarch mklarch
+ln -s larch/run/larchify larchify
+ln -s larch/run/inpacs inpacs
+ln -s larch/run/usb2bootiso usb2bootiso
+
+# Check that pacman is available.
+if ! which pacman &>/dev/null; then
+    # Fetch the pacman package from the larch site if there isn't a
+    # pacman script in larch/run
+    if ! [ -f larch/run/pacman ]; then
+        fetch pacman-packed.tar.gz
+        if ! [ -f pacman-packed.tar.gz ]; then
+            echo "ERROR: couldn't fetch pacman package"
+            exit 1
+        fi
+        # Extract the needed files from the package
+        tar -xzf pacman-packed.tar.gz
+        cp larch/config/mirrorlist repolist
+        if ! [ -f pacman.conf ]; then
+            cp larch/config/pacman.conf pacman.conf
+            # Select a package server
+            larch/run/getPackageServer -i repolist pacman.conf
+            cp pacman.conf pacman.conf.0
+            # Prevent error messages because of missing /etc/pacman.d/mirrorlist
+            sed 's|^\(Include =\)|#\1|' -i pacman.conf
+        fi
+    fi
+fi
+

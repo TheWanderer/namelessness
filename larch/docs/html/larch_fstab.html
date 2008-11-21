@@ -1,0 +1,87 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html>
+<head>
+  <meta content="text/html;charset=UTF-8" http-equiv="Content-Type">
+  <title>/etc/fstab</title>
+  <meta content="gradgrind" name="author">
+</head>
+
+<body>
+
+<table style="text-align: left; width: 100%;" border="1" cellpadding="2" cellspacing="2">
+  <tbody>
+    <tr>
+      <td><a href="larch_live_system.html">Previous: Live CD structure</a></td>
+
+      <td><a href="larch_docindex.html">Table of Contents</a></td>
+
+      <td><a href="larch_sessionsave.html">Next: Session saving</a></td>
+    </tr>
+  </tbody>
+</table>
+
+<br />
+
+<h1><big>larch</big>
+&ndash;
+a do-it-yourself live <em>Arch Linux</em> CD</h1>
+
+<img style="border: 0px solid ; width: 320px; height: 320px;" alt="" src="larch1.jpg"
+  name="graphics1" align="right" hspace="10" vspace="10" />
+<br /><br />
+
+<h2>/etc/fstab and mount points</h2>
+
+<p>The file /etc/fstab determines mount points for the various devices and partitions
+available in the system. This is of course different in every computer, so a live CD
+has to be pretty flexible here. <em>larch</em> handles this by regenerating this file
+each time it boots, basing the content on the devices it discovers in the present system.
+</p>
+
+<p>Disk partitions are not mounted automatically by <em>larch</em>, as one of the main
+purposes was to act as an installation CD - for partitioning and formatting the
+partitions must be unmounted. But each detected disk partition and CDROM device should
+get an entry in '/etc/fstab' and a corresponding mount point in '/mnt'. Thus they
+can be mounted using 'mount /mnt/DEVICE' (or by using, say, KwikDisk in KDE).
+</p>
+
+<p>It may however, under certain circumstances, be desirable to have a persistent
+'/etc/fstab'. This can be achieved by placing "#KEEP" (without the quotation marks)
+at the beginning of a line in '/etc/fstab'. This could be done when making the
+original CD by putting the desired '/etc/fstab' file in the <em>overlay</em>,
+or else - in the case of a rewritable boot medium (e.g. USB-stick) - by
+editing '/etc/fstab' while running the live system and then performing a session
+saving reboot.
+A new '/etc/fstab' (and the associated mount points in '/mnt') can be generated
+at any time while running <em>larch</em>, by executing '<strong>gen_fstab -l</strong>'.
+This might be useful after repartitioning, for example. When the '-l' option is
+omitted, no updates are made, but the proposed changes are saved to '/tmp/fstab'
+and '/tmp/mnt'.
+</p>
+
+<h4><a name="lvm"></a>LVM</h4>
+
+<p><em>larch</em> can also handle LVM volumes, including automatically
+generating entries in '/etc/fstab' and mount points in '/mnt'.
+This must however be enabled
+in '/etc/rc.conf' (e.g. by putting the required entries in 'rcconfx' in the
+<em>profile</em> used to build the <em>larch</em> system). USELVM="yes" must
+be set and the module 'dm-mod' must be loaded (this is done
+automatically when USELVM="yes" is set). The supplied 'mini2' and 'xmini' example
+profiles contains this feature, and can thus be taken as an example.
+</p>
+
+<table style="text-align: left; width: 100%;" border="1" cellpadding="2" cellspacing="2">
+  <tbody>
+    <tr>
+      <td><a href="larch_live_system.html">Previous: Live CD structure</a></td>
+
+      <td><a href="larch_docindex.html">Table of Contents</a></td>
+
+      <td><a href="larch_sessionsave.html">Next: Session saving</a></td>
+    </tr>
+  </tbody>
+</table>
+
+</body>
+</html>

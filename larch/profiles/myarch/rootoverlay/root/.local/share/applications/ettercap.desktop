@@ -1,0 +1,15 @@
+[Desktop Entry]
+Hidden=false
+Name[en_US]=Ettercap GTK
+NoDisplay=false
+Icon[en_US]=/usr/share/icons/Tango/scalable/devices/gnome-dev-ethernet.svg
+Exec=/usr/bin/ettercap-gtk --gtk
+Type=Application
+Version=1.0
+Categories=Network;System;Security;GTK;
+StartupNotify=false
+GenericName=Ettercap GTK
+Name=Ettercap GTK
+Terminal=false
+Icon=/usr/share/icons/Tango/scalable/devices/network-wireless.svg
+GenericName[en_US]=Ettercap GTK

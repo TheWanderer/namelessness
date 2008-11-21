@@ -1,0 +1,10 @@
+[Desktop Entry]
+Encoding=UTF-8
+Name=Firefox
+GenericName=Web Browser
+Comment=Browse the Internet
+Exec=firefox
+StartupNotify=true
+StartupWMClass=Firefox-bin
+Icon=web_browser.png
+Type=Application

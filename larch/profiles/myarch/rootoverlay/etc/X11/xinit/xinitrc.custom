@@ -1,0 +1,10 @@
+# Set the keymap
+xkmap-set
+
+case ${desktop} in
+    e17  ) exec enlightenment_start ;;
+
+    kde ) exec startkde ;;
+
+    * ) ;;
+esac

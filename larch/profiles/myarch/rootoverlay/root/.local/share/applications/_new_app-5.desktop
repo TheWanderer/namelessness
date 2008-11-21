@@ -1,0 +1,12 @@
+[Desktop Entry]
+Hidden=false
+Name[en_US]=Etherape
+NoDisplay=false
+Icon[en_US]=/usr/share/pixmaps/etherape.png
+Exec=/usr/bin/etherape
+Type=Application
+Version=1.0
+StartupNotify=false
+Name=Etherape
+Terminal=false
+Icon=/usr/share/pixmaps/etherape.png

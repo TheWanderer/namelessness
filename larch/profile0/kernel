@@ -1,0 +1,2 @@
+VMLINUZ=vmlinuz26
+KVERSION=$( uname -r )

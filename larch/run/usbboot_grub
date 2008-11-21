@@ -1,0 +1,180 @@
+#! /bin/bash
+#
+# usbboot_grub
+#
+# Author: Michael Towers <gradgrind[at]online[dot]de>
+
+# This file is part of the larch project.
+#
+#    larch is free software; you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation; either version 2 of the License, or
+#    (at your option) any later version.
+#
+#    larch is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with larch; if not, write to the Free Software Foundation, Inc.,
+#    51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+#
+#----------------------------------------------------------------------------
+# 2008.06.22
+
+APP="$( basename $0 )"
+
+usage () {
+    echo
+    echo "Usage:"
+    echo "  ${APP} [<Arch installation root directory>]"
+    echo
+    echo "   Prepare a bootable USB-stick from a larch build."
+    echo "   If no Arch directory is given, '/' is assumed."
+    exit 1
+}
+
+if [ -n "$1" ]; then
+    AINSTALL="$( readlink -f $1 )"
+    if [ ! -x ${AINSTALL}/sbin/grub ]; then
+        echo "ERROR: ${AINSTALL}/sbin/grub not found"
+        exit 1
+    fi
+else
+    AINSTALL=""
+    if ! which grub &>/dev/null; then
+        echo "ERROR: grub not found"
+        exit 1
+    fi
+fi
+CDDATA=${AINSTALL}/.larch/cd
+
+if [ ! -f ${CDDATA}/system.sqf ]; then
+    echo "ERROR: ${CDDATA} does not contain larch cd data"
+    usage
+fi
+if [ ! -f ${CDDATA}/boot/grub/stage1 ]; then
+    echo "ERROR: grub data not in ${CDDATA}/boot/grub"
+    exit 1
+fi
+
+echo "//"
+echo "// **********************************************************"
+echo "//"
+echo "// ${APP} will prepare a bootable USB stick with your"
+echo "// previously prepared larch data from ${CDDATA}"
+echo "//"
+echo "// As an alternative it might render your system unbootable."
+echo "// If that thought disturbs you please don't continue."
+echo "//"
+echo "// This program is DANGEROUS - you have been warned!!!"
+echo "//"
+echo "// If you are too cool to be concerned about the warnings,"
+echo "// please insert your USB stick, which should already be"
+echo "// appropriately partitioned."
+echo "//"
+echo "// **********************************************************"
+echo "//"
+
+# test if the script is started by root user. If not, exit
+if [ $UID -ne 0 ]; then
+    echo "Only root can run ${APP}"; exit 1
+fi
+
+echo "//"
+echo "// Enter the number of the partition you wish to use (0 to quit):"
+
+devices=/tmp/devices$$
+:> ${devices}
+i=0
+sfdisk -d | grep "/dev/sd[a-z][1-4] " | grep -v "Id= [05]" | \
+        sed "s|\(.*\):.*size=\( *[0-9]*\).*|\1 \2|" | while read device sectors; do
+
+    i=$(( ${i} + 1 ))
+    echo "${device}" >>${devices}
+    echo "// ${i}: ${device} $(( ${sectors} / 2048 )) MiB"
+done
+
+while true; do
+    read -p "// Device: " d
+    if [ "${d}" -eq "0" ]; then exit 1; fi
+    i=0
+    { while read device; do
+        i=$(( ${i} + 1 ))
+        if [ "${d}" -eq "${i}" ]; then break 2; fi
+    done } <${devices}
+done
+
+rm ${devices}
+
+echo "//"
+read -p "// \"${device}\" will now be prepared. Continue? [y/N]: " ans
+if [ -z "`echo ${ans} | grep '^ *[yY]'`" ]; then exit 1; fi
+
+echo "//"
+echo "// Formatting ${device} (ext2)"
+dev=${device:0:8}
+part=${device:8}
+sfdisk ${dev} -N${part} <<EOF
+,,L,*
+EOF
+
+mke2fs ${device}
+
+echo "// Copying the files"
+stick=/tmp/mnt
+mkdir -p ${stick}
+umount ${device} &>/dev/null
+mount ${device} ${stick}
+if [ $? != 0 ]; then
+  echo "ERROR: Failed to mount device, quitting"
+  exit 3
+fi
+cp -a ${CDDATA}/* ${stick}
+umount ${stick}
+
+# Convert the device and partion to grub syntax
+grubdevice ()
+{
+## The contents of device.map look something like this:
+#(fd0)   /dev/fd0
+#(hd0)   /dev/hda
+#(hd1)   /dev/sda
+gdev="$( cat ${AINSTALL}${dmap} | grep "${dev}" | cut -f1  | tr -d "()" )"
+gpart=$(( ${part} - 1 ))
+echo "// Installing GRUB to (${gdev}), root (${gdev},${gpart})"
+}
+
+dmap=/tmp/device.map
+rm -f ${AINSTALL}${dmap}
+if [ -n "${AINSTALL}" ]; then
+    # First try to get a device mapping
+    mount --bind /dev ${AINSTALL}/dev
+    echo "quit" | chroot ${AINSTALL} grub --no-floppy --device-map=${dmap} --batch
+    grubdevice
+    # Now actually install grub
+    # As far as I can tell, the extra options to grub are not needed here
+    chroot ${AINSTALL} grub --batch <<EOT
+root (${gdev},${gpart})
+setup (${gdev})
+quit
+EOT
+    umount ${AINSTALL}/dev
+else
+    # First try to get a device mapping
+    echo "quit" | grub --no-floppy --device-map=${dmap} --batch
+    grubdevice
+    # Now actually install grub
+    # As far as I can tell, the extra options to grub are not needed here
+    grub --batch <<EOT
+root (${gdev},${gpart})
+setup (${gdev})
+quit
+EOT
+fi
+rm -f ${AINSTALL}${dmap}
+
+echo "//"
+echo "// Done!"
+echo "// If all went well your usb stick should now be a bootable larch system"

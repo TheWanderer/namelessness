@@ -1,0 +1,11 @@
+
+[Desktop Entry]
+Encoding=UTF-8
+Type=Application
+Name=Larch Documentation
+Comment=
+Categories=Application;
+Exec=xdg-open file:///opt/larch/docs/html/larch_intro.html
+Icon=larch
+Terminal=false
+StartupNotify=true

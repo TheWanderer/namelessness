@@ -1,0 +1,122 @@
+#! /bin/bash
+#
+# xpack -  simple tool for handling self-extracting archives
+#
+# Author: Michael Towers <gradgrind[at]online[dot]de>
+#
+#    xpack is free software; you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation; either version 2 of the License, or
+#    (at your option) any later version.
+#
+#    xpack is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with xpack; if not, write to the Free Software Foundation, Inc.,
+#    51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+#
+#----------------------------------------------------------------------------
+#
+# version 1.1
+
+# This script serves both as packer and extracter, according to the name used
+# to invoke it. When invoked as 'xpack', it will copy itself to the archive
+# file (passed on the command line) and then append a tar.gz archive of the
+# source directory (passed on the command line). E.g.
+#     ./xpack path/to/archive xarchive
+# To extract the archive, simply run the resulting archive file, passing a
+# directory into which it should be unpacked on the command line. E.g.
+#          ./xarchive newpath/to/directory
+# or,      bash xarchive newpath/to/directory
+
+if [ "$( basename "$0" )" != "xpack" ]; then
+    # extract archive
+    if [ ! -d "$1" ]; then
+        echo "ERROR: Destination directory not found"
+        echo "Usage:"
+        echo "  ${APP}  <directory>  - Unpack this archive to <directory> (which must exist)"
+        exit 1
+    fi
+
+# The following lines allow the implementation of the '-r' option to xpack.
+# The version of this script which is copied to the generated archive file will,
+# in that case, have the '#+#' removed.
+#+#    # test if the script is started by root user. If not, exit
+#+#    if [ $UID -ne 0 ]; then
+#+#        echo "Only root can run $0"; exit 1
+#+#    fi
+
+    echo "Extracting archive to $1"
+    let "SKIP = $( grep --binary-files=text -n -m 1 "^#__ARCHIVE__" "$0" | cut -d ':' -f 1 ) + 1"
+
+    tail -n +$SKIP "$0" | tar -xzC "$1"
+    exit 0
+fi
+
+usage () {
+    echo
+    echo "Usage:"
+    echo "  ${APP}  [-dr] <directory> <archive file>"
+    echo "             Create self-extracting archive from <directory>"
+    echo
+    echo "          -d    Don't include the base directory"
+    echo "          -r    Require root permissions for extracting"
+    echo
+    exit 1
+}
+
+NOBASE=""
+ROOT=""
+while getopts ":dr" Option
+do
+  case ${Option} in
+    d ) NOBASE="-d" ;;
+    r ) ROOT="-r" ;;
+    * ) usage ;;
+  esac
+done
+shift $((${OPTIND} - 1))
+
+if [ ! -d "$1" ]; then
+    echo "ERROR: Source directory not found"
+    usage
+fi
+
+if [ -e "$2" ]; then
+    echo "ERROR: Destination file exists"
+    usage
+fi
+
+cp $0 $2
+if [ $? -ne 0 ]; then
+    echo "ERROR: Cannot write to destination file"
+    usage
+fi
+
+if [ -n "${ROOT}" ]; then
+    if [ $UID -ne 0 ]; then
+        echo "Only root can use the -r opton"
+        exit 1
+    fi
+    sed -i 's|^#+#||g' $2
+fi
+
+DIR="$( readlink -f $1 )"
+BASE="."
+if [ -z "${NOBASE}" ]; then
+    DIR="$( dirname ${DIR} )"
+    if [ $? -ne 0 ]; then echo "dirname -f ${DIR} ... failed"; usage; fi
+    BASE="$( basename $1 )"
+fi
+
+# tar to standard output adds a load of nulls to the output,
+# which is a bit untidy and results in warnings, so do it this way:
+tar czf $2_ -C ${DIR} ${BASE}
+cat $2_ >> $2
+rm $2_
+
+# DO NOT delete the next line, which MUST be the last line of 'xpack'
+#__ARCHIVE__

@@ -1,0 +1,78 @@
+#!/bin/sh
+
+# usb2iso
+
+# For use (especially) after a usb-stick larch system (syslinux based
+# only at the moment) has been modified, this will generate a bootable
+# iso from it.
+
+# WARNING - a lot of space is needed as the whole cd content must be copied.
+
+# $1 is the mount point of the usb-stick. If none use /.livesys/medium
+# (i.e. assuming it is being run from a larch system).
+# The iso will be generated in the current working directory.
+#===================================================================
+# 2008.04.21
+
+ISOLINUXBIN=/usr/lib/syslinux/isolinux.bin
+
+APP="$( basename $0 )"
+# Get path to larch base directory, via the location of this script
+FULLPATH="$( readlink -f $0 )"
+SCRIPTDIR="$( dirname ${FULLPATH} )"
+
+mkiso ()
+{
+    mkisofs -r -l $1 \
+        -no-emul-boot -boot-load-size 4 -boot-info-table \
+        -input-charset=UTF-8 \
+        -publisher "designed by gradgrind, licence: GPL" \
+        -A "larch-5" \
+        -o "livecd.iso" "${CDDATA}"
+
+    if [ $? -eq 0 ]; then
+        echo "// Your ISO has been created as livecd.iso"
+    else
+        echo "ERROR: iso build failed" 1>&2
+        return 1
+    fi
+}
+
+if [ -z "$1" ]; then
+    if [ -d /.livesys/medium/larch ]; then
+        MP=/.livesys/medium
+    else
+        echo "Must pass usb-stick mount-point as argument"
+        exit 1
+    fi
+else
+    if ! [ -d "$1/larch" ]; then
+        echo "No larch system found at $1"
+        exit 1
+    fi
+    MP="$( readlink -f $1 )"
+fi
+
+CDDATA=$( pwd )/bootcd
+rm -rf ${CDDATA}
+mkdir -p ${CDDATA}
+
+if ! cp -r ${MP}/syslinux ${CDDATA} &>/dev/null; then
+    echo "No larch boot files found at ${MP}/syslinux"
+    exit 1
+fi
+mv ${CDDATA}/syslinux ${CDDATA}/isolinux
+mv ${CDDATA}/isolinux/syslinux.cfg ${CDDATA}/isolinux/isolinux.cfg
+if ! cp ${ISOLINUXBIN} ${CDDATA}/isolinux; then
+    echo "Couldn't find isolinux.bin"
+    exit 1
+fi
+
+echo "Copying data, this could take a while"
+cp -r ${MP}/larch ${CDDATA}
+cp ${MP}/system.sqf ${CDDATA}
+cp ${MP}/mods.sqf ${CDDATA}
+cp ${MP}/overlay.ovl ${CDDATA}
+
+mkiso "-b isolinux/isolinux.bin -c isolinux/isolinux.boot"
+

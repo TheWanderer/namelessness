@@ -1,0 +1,167 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html>
+<head>
+  <meta content="text/html;charset=UTF-8" http-equiv="Content-Type">
+  <title>larch profiles</title>
+  <meta content="gradgrind" name="author">
+</head>
+
+<body>
+<table style="text-align: left; width: 100%;" border="1" cellpadding="2" cellspacing="2">
+  <tbody>
+    <tr>
+      <td><a href="larch_overview.html">Previous: Overview</a></td>
+
+      <td><a href="larch_docindex.html">Table of Contents</a></td>
+
+      <td><a href="larch_live_system.html">Next: Live CD structure</a></td>
+    </tr>
+  </tbody>
+</table>
+
+<br />
+
+<h1><big>larch</big>
+&ndash;
+a do-it-yourself live <em>Arch Linu</em>x CD</h1>
+
+
+<img style="border: 0px solid ; width: 320px; height: 320px;" alt="" src="larch1.jpg"
+  name="graphics1" align="right" hspace="10" vspace="10" />
+<br /><br />
+
+<h2>Profiles</h2>
+
+<p>This feature of the <em>larch</em> scripts allows bundling
+all the configuration information for a particular live CD 'design' into
+a single directory. That includes the list of packages to be installed, locale
+information and the particular tweaks and additions needed to customize the CD,
+in particular a subdirectory containing the 'overlay' files - those files
+which have been changed from their initial fresh state after installation
+and those which have simply been added.
+</p>
+
+<p>In order to allow more flexibility with the overlay, <em>larch</em> now
+provides two mechanisms for providing overlay files. The simplest is by
+means of the directory 'rootoverlay' - everything in this directory will be
+copied to the live system overlay and its ownership will be changed to
+'root:root'. In case it is desired to include files with other ownerships,
+these must be packed up with the correct ownerships into the file 'overlay.xpk'
+using the <em>xpack</em> packing utility (supplied with <em>larch</em>, see
+below). This requires some care, but is a little safer than, say, a 'tar.gz'
+archive because it has an option to pack so that only root can unpack the
+archive.
+In general however the 'rootoverlay' directory should be adequate, and
+much of the tweaking may be done <em>in situ</em> (i.e. within a running
+live USB system), using a utility - see
+<a href="larch_sessionsave.html">'Session saving'</a> - to recreate
+the compressed overlay file-system (<strong>overlay.ovl</strong>).
+</p>
+
+<p>If you would like to have a look at a profile, look in the 'profiles'
+directory in the distribution. Each of its subdirectories is a profile, the
+subdirectory name is also the profile name. If you want to make your own
+profile, it is probably easiest to start with one of the examples. Copy it to a
+working directory and rename it appropriately.
+</p>
+
+<p>After editing to your heart's content, you can build the corresponding live
+CD system with the call:
+<pre>
+        (path/to/)mklarch -p directory
+</pre>
+where 'directory' is your profile directory.
+</p>
+
+<p>The important files within a profile are described below:
+</p>
+<ul>
+  <li><strong>addedpacks</strong> - a simple list of packages (just package
+  name as supplied to 'pacman -S', e.g. 'syslinux', not the file name), one per line,
+  comment lines start with '#'.
+  This is the primary place for configuring which packages are installed.
+  </li>
+
+  <li><strong>locale.gen</strong> - <em>mklarch</em> prefixes this profile
+  file (if it is present) to the file '/etc/locale.gen' in the newly installed
+  system and runs 'locale-gen' (using <em>chroot</em>) to deal with glibc
+  locale generation.
+  So just put the locales you want in here.
+  </li>
+
+  <li><strong>rcconfx</strong> - This is a list of modifications for '/etc/rc.conf'.
+  It contains those variable definitions which are different to the default
+  values. This is then merged with the original to produce a modified overlay file.
+  </li>
+
+  <li><strong>rootoverlay</strong> - The files in this directory are effectively
+  copied on top of the original system - as an overlay. They (potentially)
+  form the bulk of the customization for the live system.
+  </li>
+
+  <li><strong>overlay.xpk</strong> - As described above this is a self-extracting
+  archive of 'overlay files', which can be used as an alternative to 'rootoverlay'
+  for non-root owned files.
+  </li>
+
+  <li><strong>mkinitcpio.conf</strong> - This file is optional. If it is present it will
+  replace the version in the 'lib/initcpio' folder of the
+  <em>larch-live</em> package to produce the initramfs
+  for the live CD. You should take that file as the starting point to ensure that
+  the necessary larch hooks are installed, but you are free to change other hooks
+  (e.g. use 'ide' instead of 'pata') or add modules.
+  </li>
+
+  <li><strong>basepacks</strong> - This file is optional. If it is present it
+  supplies a list of packages (one package per line, as <em>addedpacks</em>) to be
+  used instead of the standard list of 'core/base' packages for the basis of the
+  installation done by <em>mklarch</em>, preventing the 'packages.txt' file from the
+  'core' repository from being downloaded and used as source for the base package list.
+  </li>
+
+  <li><strong>baseveto</strong> - This file is optional. It provides a list of
+  packages (one package per line) to be ignored in the base package list.</li>
+
+  <li><strong>cd-root</strong> - This directory contains files to configure the bootloader.
+  Those for <em>isolinux</em> are in the directory 'isolinux', which is copied to the
+  root CD directory when the <em>isolinux</em> bootloader is chosen. Those for
+  <em>GRUB</em> are in the directory 'boot', which is copied to the
+  root CD directory when the <em>GRUB</em> bootloader is chosen. Here you can
+  configure things like boot menus and splash screens.
+  Anything in the 'cd-root' folder will be copied directly to the root of the live medium, so
+  if there is anything else you want on your medium, you can put it in here.
+  </li>
+</ul>
+
+<h3><a name="xpack"></a><em>xpack</em> and non-root owned overlay files</h3>
+To include non 'root:root' owned files in an overlay, create a directory
+somewhere called 'overlay' and place all the desired files therein with the
+correct paths, ownerships and permissions. Then run
+<pre>
+        xpath -r overlay overlay.xpk
+</pre>
+(from within the directory containing 'overlay'). The resulting 'overlay.xpk'
+file should then be placed in your profile directory.
+If you want to unpack such an overlay archive, you need to be root, go to the
+directory containing it and run
+<pre>
+        ./overlay.xpk .
+</pre>
+(don't miss the final '.', the unpacker needs an existing
+directory as parameter).
+</p>
+
+<table style="text-align: left; width: 100%;" border="1" cellpadding="2" cellspacing="2">
+  <tbody>
+    <tr>
+      <td><a href="larch_overview.html">Previous: Overview</a></td>
+
+      <td><a href="larch_docindex.html">Table of Contents</a></td>
+
+      <td><a href="larch_live_system.html">Next: Live CD structure</a></td>
+    </tr>
+  </tbody>
+</table>
+
+</body>
+</html>

@@ -1,0 +1,169 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html>
+<head>
+  <meta content="text/html;charset=UTF-8" http-equiv="Content-Type">
+  <title>running larch</title>
+  <meta content="gradgrind" name="author">
+</head>
+
+<body>
+
+<table style="text-align: left; width: 100%;" border="1" cellpadding="2" cellspacing="2">
+  <tbody>
+    <tr>
+
+      <td><a href="larch_ssh.html">Previous: ssh access</a></td>
+
+      <td><a href="larch_docindex.html">Table of Contents</a></td>
+
+      <td><a href="larch_.html">Next: ????</a></td>
+
+    </tr>
+  </tbody>
+</table>
+
+<br />
+
+<h1><big>larch</big>
+&ndash;
+a do-it-yourself live <em>Arch Linux</em> CD</h1>
+
+<img style="border: 0px solid ; width: 320px; height: 320px;" alt="" src="larch1.jpg"
+  name="graphics1" align="right" hspace="10" vspace="10" />
+<br /><br />
+
+<h2>Running a <em>larch</em> live-CD/USB system</h2>
+
+<p>Of course the details depend on what you have installed and how you have
+configured it. For example, the 'mini2' example profile builds a console-only system,
+the 'xmaxi' profile boots to xfce4.
+</p>
+
+<p>One thing worth noting is that these supplied profiles automatically login
+to the root account, which - potentially - allows all sorts of 'dangerous' actions,
+like reformatting your disks or making a mess of your file-systems in other ways.
+This is because one of the main <em>raisons d'être</em> for <em>larch</em> is its use
+as an <em>Arch</em>-installation-and-rescue medium. For this, you need root access.
+However, if you want to use the system in other ways, e.g. for text or image editing,
+or for internet browsing or e-mail writing, it might be safer to do this as an
+unprivileged user. Such a user is easily created with the 'adduser' command, or
+in KDE with 'kuser' (or using the 'luser.py' script in the <em>larch</em>
+'<em>luser</em>' package). If you have a writable boot medium, such changes can be
+'remembered' by saving the session when you shut the system down (the possibility
+will normally be offered automatically).
+</p>
+
+<h4><a name="bootparm"></a>Boot parameters</h4>
+
+<p>As the <em>larch</em> build system is highly configurable, the available
+boot parameters can also vary, but by default 'swap' and 'c2r' are provided.
+'swap' indicates that an existing swap partition should be used (the default
+is not to use it). 'c2r' means 'copy to RAM', i.e. the system data is copied
+to main memory before the system is initialized. This allow the system to run
+very fast and frees up the boot device (e.g. the boot CD can be ejected and the
+drive used for another CD), but it does require a lot of memory (significantly
+more than the size of the boot medium), and the boot process is rather slow
+because so much data must be copied. Because of the high memory usage, I have
+arranged it so that 'c2r' also implies 'swap'. With A USB-stick as boot medium,
+the 'c2r' parameter should generally not really be needed, performance is normally
+pretty good and it doesn't occupy the CD-drive (if an extra boot CD is needed, on
+a machine that can't boot directly from USB, that can be removed after
+booting even without 'c2r').
+</p>
+
+<h4><a name="config"></a>Configuration</h4>
+
+<p>The supplied profiles are just intended as starting points for your own
+configurations, they are fairly primitive, in fact only a little more than a newly
+installed <em>Arch</em> sytem. If you are running a profile with X11, you may find that you
+need to configure it before it will run. Since <em>Xorg</em> version 7.3, it
+is often possible to run without an <strong>/etc/X11/xorg.conf</strong>, but
+it may be necessary to create and tweak the configuration file for your system.
+You can try 'X -configure' or 'xorgconfig' to create a starting point which you can
+then tweak. Start X with <em>startx</em>.
+</p>
+
+<p>The 'xmini' and 'xmaxi' profiles use a slightly more elaborate login approach on
+the first terminal, with a simple menu as well as automatic login. There is also
+a logout gui for xfce, which together with the login script can
+trigger session saving directly, bypassing the console prompt.
+</p>
+
+<p>If you are stuck with the console, there is still hope. It's not as pretty or
+newbie friendly as an X11 desktop, but still quite capable. I always like to have
+<em>mc</em> available, it's a real godsend for non-geeks (you should also install
+<em>lynx</em> so that HTML files can be displayed on the console - at a
+pinch you can also surf with it, but it is painful).
+</p>
+
+<p>If your console keyboard map is
+wrong, try running <i>km</i> (I stole this from the
+standard Arch install CD and modified it a bit to work in <em>larch</em>).
+It also modifies '/etc/rc.conf', so the change can be retained for subsequent
+runs by performing a 'session-save'.
+</p>
+
+<p>If you have a DHCP server on your network, you might well find that
+the network interface is configured automatically (assuming your <em>rc.conf</em>
+is configured appropriately). On my prototype, I could just fire up <em>konqueror</em>
+and the world was my oyster, as they say. If not, well I'm afraid it's
+not so easy. Until someone comes up with something better, you'll have
+to edit the appropriate configuration files (primarily '/etc/rc.conf')
+- see the <em>Arch Linux</em> documentation for details - and then do
+'/etc/rc.d/network start'. If you already have a running network
+interface but want to change it, you may need to stop it running first,
+using 'stop' instead of 'start', then make the changes, then start it.
+I don't know if 'restart' would work (it stops then starts the network)
+after a change to the configuration.
+</p>
+
+<p>Of course the exact details of what you can do depends on what
+software you installed, so I won't rabbit on endlessly about it here.
+Nearly all configuration details should be just the same as in a normal,
+hard-disk based installation.
+</p>
+
+<h4><a name="install"></a>Installation to hard disk</h4>
+
+<p>The <em>larch</em> hard-disk installer <em>larchin</em> may be used to install
+<em>Arch Linux</em> to hard disk (or similar). At the moment it is very fresh
+and rather minimal, probably rather buggy, but I hope it will improve over time.
+It is not intended as a complete solution for all aspects of <em>Arch</em> installation,
+but I have tried to concentrate on those areas that are unique to the installation
+process. In other words it does very little system configuration, because such
+requirements can also exist in an already installed system, so I think this should
+be covered by separate tools.
+<em>larchin</em> deals with partitioning and formatting of hard drives, placing
+<em>Arch Linux</em> (primarily a copy of the live system on which it is running)
+on the newly formatted partitions, and installation of the GRUB bootloader.
+It is so fresh that it hasn't yet got any documentation yet, but it's usage
+should be very straightforward - just run 'larchin.py', as root).
+</p>
+
+<p>As mentioned above the main approach to <em>Arch</em> installation covered by
+<em>larchin</em> is to copy the contents of the live system to a hard drive. Those
+(few) bits peculiar to the needs of a live system are removed and the result is a
+completely normal <em>Arch Linux</em> installation. I should perhaps mention
+the file 'larch0' in the '/.livesys' directory (copied there from the 'larch/copy'
+directory on the boot medium). This script is run at the end of the installation
+(if it exists) and allows custom installation actions to be performed.
+The possibility of doing a completely fresh installation using ftp to
+fetch the latest packages may be added at some point, but that is not yet certain.
+</p>
+
+<table style="text-align: left; width: 100%;" border="1" cellpadding="2" cellspacing="2">
+  <tbody>
+    <tr>
+
+      <td><a href="larch_ssh.html">Previous: ssh access</a></td>
+
+      <td><a href="larch_docindex.html">Table of Contents</a></td>
+
+      <td><a href="larch_.html">Next: ????</a></td>
+
+    </tr>
+  </tbody>
+</table>
+
+</body>
+</html>

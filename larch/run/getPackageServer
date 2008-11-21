@@ -1,0 +1,275 @@
+#!/usr/bin/env python
+# -*- coding: UTF-8 -*-
+
+# getPackageServer - select a pacman package server
+#
+# Author: Michael Towers <gradgrind[at]online[dot]de>
+#
+# This file is part of the larch project.
+#
+#    larch is free software; you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation; either version 2 of the License, or
+#    (at your option) any later version.
+#
+#    larch is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with larch; if not, write to the Free Software Foundation, Inc.,
+#    51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+#
+#----------------------------------------------------------------------------
+#2008.08.10
+
+import getopt, sys, os
+from subprocess import Popen, PIPE, STDOUT
+
+# Build a list structure with areas, subareas and servers
+# [ [area1, [ [subarea1, [server1, server2, ...]],
+#             [subarea2, [server1, server2, ...]],
+#             ...
+#           ]
+#   ],
+#   [area2, [ [subarea1, [server1, server2, ...]],
+#             [subarea2, [server1, server2, ...]],
+#             ...
+#           ]
+#   ],
+#   ...
+# ]
+def parseFile(path):
+    areas = []
+    header = True
+    fh = open(path)
+    for line in fh:
+        sline = line.strip()
+        if header:
+            if not sline.startswith('#'):
+                header = False
+            continue
+
+        if not sline:
+            continue
+
+        if sline.startswith('#'):
+            if (sline.find('Server =') >= 0):
+                # Commented out server
+                continue
+            if sline.startswith('##'):
+                # Real comment
+                continue
+            # Otherwise assume this is an area name
+            if sline.startswith('# -'):
+                # New subarea
+                servers = []
+                subarealist = [sline.split('-', 1)[1].strip(), servers]
+                subareas.append(subarealist)
+            else:
+                # New area (if no subarea, use 'all')
+                servers = None
+                subareas = []
+                arealist = [sline[1:].strip(), subareas]
+                areas.append(arealist)
+            continue
+
+        if sline.startswith('Server ='):
+            server = sline.split('=')[1].strip()
+            if (servers == None):
+                servers = []
+                subarealist = ['all', servers]
+                subareas.append(subarealist)
+            servers.append(server)
+
+        else:
+            report("Unexpected line:\n%s\n" % line)
+
+    fh.close()
+    return areas
+
+#Menu using 'dialog'
+#+++++++++++++++++++
+# geometry:
+WIDTH = '76'
+HEIGHT = '20'
+LINES = '8'
+def menu_d(title, text, entries, default=0, header=None):
+    # Note that dialog indexing starts at 1, not 0!
+    i = 1
+    mlist = []
+    for m in entries:
+        mlist += ["%d" % i, "%-60s" % m]
+        i += 1
+    if header:
+        text += "\n       " + header
+    cmd = ['dialog', '--title', title,
+            '--default-item', "%d" % (default+1),
+            '--menu', text, HEIGHT, WIDTH, LINES] + mlist
+    #print cmd
+    p = Popen(cmd, stderr=PIPE)
+    output = p.communicate()[1]
+    rc = p.returncode
+
+    if (rc == 0):
+        return int(output)
+    elif (rc == 1):
+        return 0
+    else:
+        assert False
+
+#Menu using plain console
+#++++++++++++++++++++++++
+def menu_c(title, text, entries):
+    t = "***** %s *****" % title
+    print t
+    print "=" * len(t)
+    print text
+    i = 0
+    ilist = "123456789abcdefghijklmnopqrstuvwxyz"
+    for m in entries:
+        print "  %s - %-60s" % (ilist[i], m)
+        i += 1
+    print "-----------------------------------------"
+    print "  0 - Go back"
+    k = raw_input("Select: ")
+    if (k == "0"):
+        return 0
+    n = -1
+    if k in "123456789":
+        n = (ord(k) - ord("0"))
+    elif k in "abcdefghijklmnopqrstuvwxyz":
+        n = (ord(k) - ord("a") + 10)
+    assert ((n>0) and (n<=i))
+    return n
+
+def menu(title, text, entries, default=0, header=None):
+    """General menu, uses 'dialog' if available, else plain console.
+    """
+    if console:
+        return menu_c(title, text, entries)
+    else:
+        return menu_d(title, text, entries, default=0, header=None)
+
+import re
+re1 = re.compile(r"/\$repo/os/.*")
+def repoDialog(servers):
+    serverList = parseFile(servers)
+    step = 0
+    while True:
+        if (step == 0):
+            areaList = [a[0] for a in serverList]
+            a1 = menu("Choose Arch Repository",
+                    "Select a region",
+                    areaList)
+            if (a1 == 0):
+                step = -1
+                break
+            step = 1
+
+        list2 = serverList[a1-1][1]
+        if (len(list2) == 1):
+            a = 1
+            step = 0
+        else:
+            subareaList = [a[0] for a in list2]
+            a = menu("Choose Arch Repository",
+                    "Select a sub-region",
+                    subareaList)
+            if (a == 0):
+                step = 0
+                continue
+
+        mirrorList = list2[a-1][1]
+        list3 = [re1.sub("", m) for m in mirrorList]
+        a = menu("Choose Arch Repository",
+                "Select a mirror",
+                list3)
+        if (a > 0):
+            break
+
+    if (step >= 0):
+        return mirrorList[a-1]
+    else:
+        return None
+
+
+def usage():
+    print "Usage:"
+    print "  getPackageServer [-h] [-i <repository list file>] [<pacman.conf>]"
+    print
+    print "Select a server for Arch Linux packages. The given pacman.conf"
+    print "file will be updated to use the chosen server first. Other entries"
+    print "will not be affected."
+    print
+    print "          -h       Print this message"
+    print "          -i       Supply an alternative list of repositories."
+    print "                   The default is /etc/pacman.d/mirrorlist"
+    print "          -c       Use plain console for interaction even if"
+    print "                   'dialog' is available"
+    print
+    print "If no pacman.conf file is supplied, the chosen repository URL will"
+    print "be output to stdout - mainly for test purposes."
+
+if __name__ == '__main__':
+    def report(text):
+        print text
+
+    repolist = '/etc/pacman.d/mirrorlist'
+
+    # determine whether 'dialog' utility is available
+    p = Popen(["which", "dialog"], stdout=PIPE, stderr=STDOUT)
+    output = p.communicate()[1]
+    console = (p.returncode != 0)
+
+    try:
+        opts, args = getopt.getopt(sys.argv[1:], "i:hc")
+    except getopt.GetoptError:
+        # print help information and exit:
+        usage()
+        sys.exit(1)
+    for o, a in opts:
+        if (o == "-h"):
+            usage()
+            sys.exit()
+        if (o == "-i"):
+            repolist = a
+        if (o == "-c"):
+            console = True
+
+    if (len(args) > 1):
+        # print help information and exit:
+        usage()
+        sys.exit(1)
+
+    mirror = repoDialog(repolist)
+    if not mirror:
+        print "Cancelled"
+        sys.exit(1)
+
+    if (len(args) == 0):
+        print mirror
+        sys.exit(0)
+
+    # Generate pacman.conf file
+    mirror = "Server = " + mirror
+    # The value for @carch@ will be substituted when building the package
+    mirror = mirror.replace("@carch@", "i686")
+    pcfile = args[0]
+    pcfh = open(pcfile, "r")
+    pcf = pcfh.read()
+    pcfh.close()
+    os.remove(pcfile)
+    pcfh = open(pcfile, "w")
+    for line in pcf.splitlines(True):
+        pcfh.write(line)
+        if line.startswith("[core]"):
+            pcfh.write(mirror.replace("$repo", "core") + "\n")
+        elif line.startswith("[extra]"):
+            pcfh.write(mirror.replace("$repo", "extra") + "\n")
+        elif line.startswith("[community]"):
+            pcfh.write(mirror.replace("$repo", "community") + "\n")
+
+    pcfh.close()
+    print "++ Updated %s" % pcfile

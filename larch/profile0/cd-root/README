@@ -1,0 +1,8 @@
+If in "GRUB" mode, the contents of the "boot" directory will be copied
+to the "boot" directory on the CD.
+
+If in "isolinux" mode, the contents of the "isolinux" directory will be
+copied to the "isolinux" directory on the CD.
+
+In both cases these profile files may overwrite the default ones from
+"larch/cd-root".

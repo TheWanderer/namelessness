@@ -1,0 +1,17 @@
+[Desktop Entry]
+Hidden=false
+Name[en_US]=rxvt-unicode
+NoDisplay=false
+Icon[en_US]=/usr/share/icons/Tango/scalable/apps/konsole.svg
+Exec=urxvt
+Type=Application
+Version=1.0
+Categories=Application;System;TerminalEmulator;
+StartupNotify=false
+GenericName=rxvt-unicode
+Name=rxvt-unicode
+Terminal=false
+Comment=An Unicode capable rxvt clone
+Comment[en_US]=An Unicode capable rxvt clone
+Icon=/usr/share/icons/Tango/scalable/apps/konsole.svg
+GenericName[en_US]=rxvt-unicode

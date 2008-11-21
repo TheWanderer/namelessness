@@ -1,0 +1,12 @@
+[Desktop Entry]
+Hidden=false
+Name[en_US]=nessus
+NoDisplay=false
+Icon[en_US]=/usr/share/icons/Tango/scalable/apps/zen-icon.svg
+Exec=/usr/bin/nessus
+Type=Application
+Version=1.0
+StartupNotify=false
+Name=nessus
+Terminal=false
+Icon=/usr/share/icons/Tango/scalable/apps/zen-icon.svg

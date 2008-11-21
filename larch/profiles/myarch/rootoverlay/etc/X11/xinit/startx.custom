@@ -1,0 +1,22 @@
+if grep -v nox /proc/cmdline &>/dev/null && \
+        [ -z "$DISPLAY" ] && echo $(tty) | grep /vc/1 &>/dev/null; then
+    if grep i810 /proc/cmdline &>/dev/null; then
+        startx -- -config xorg.conf.i810
+    else
+        startx
+    fi
+
+    # Maybe there should be some code here to handle a failed startx?
+    
+    # The 'return' value is at /tmp/xlogout
+    # If there is nothing there, switch user to 'newuser'
+    # If there is also nothing there, login as root
+    #    - if already root, fall through to terminal
+    
+    if [ -f /tmp/xlogout ] || [ -f /tmp/newuser ]; then
+        logout    
+    elif [ ${UID} -ne 0 ]; then
+        echo "root" >/tmp/newuser
+        logout
+    fi
+fi

@@ -1,0 +1,63 @@
+# This is a script 'sourced' from the installation script larch-tidy.
+# Its purpose is to remove custom live-only stuff from a just-installed
+# system.
+# ${INSTALL} is the path to the installed system root directory.
+
+rm "${INSTALL}/root/Desktop/Install Arch Linux.desktop"
+
+if [ -f ${INSTALL}/etc/rc.local.orig ]; then
+    mv ${INSTALL}/etc/rc.local.orig ${INSTALL}/etc/rc.local
+fi
+if [ -f ${INSTALL}/etc/rc.local.shutdown.orig ]; then
+    mv ${INSTALL}/etc/rc.local.shutdown.orig ${INSTALL}/etc/rc.local.shutdown
+fi
+
+# slim is currently started in inittab
+#sed -i '/^DAEMONS=/ s|!slim|@slim|' ${INSTALL}/etc/rc.conf
+
+# Copy xorg.conf.i810 to target xorg.conf if necessary
+if ! [ -f /etc/X11/xorg.conf ]; then
+    if grep i810 /proc/cmdline &>/dev/null; then
+        cp /etc/X11/xorg.conf.i810 ${INSTALL}/etc/X11/xorg.conf
+    fi
+fi
+
+#***************************************************#
+# Replace uses of larchquit in xfce panels and menu.#
+#***************************************************#
+### Unfortunately this isn't very simple. If anyone has a better way of
+### providing different Quit actions in the live version and the version
+### installed to disk from it, please let me know!
+### Maybe it would be better just to provide a special live quit desktop
+### icon which can be removed on installation, like the installation icon.
+
+defaultquit='<builtin name="Quit" cmd="Quit" icon="gnome-logout"/>'
+
+replacequit ()
+{
+    for f in ${INSTALL}$1/.config/xfce4/panel/*; do
+        if grep "^Exec=larchquit" ${f}; then
+            n=$( echo ${f} | sed "s|^.*-\([0-9]\+\).*|\1|" )
+            cp /.livesys/actions.rc \
+                    ${INSTALL}$1/.config/xfce4/panel/actions-${n}.rc
+            rm ${f}
+
+            sed -i "s|=\"launcher\" id=\"${n}\"|=\"actions\" id=\"${n}\"|" \
+                    ${INSTALL}$1/.config/xfce4/panel/panels.xml
+        fi
+    done
+
+    if [ -f ${INSTALL}$1/.bash_profile ]; then
+        sed -i "s|<app .*cmd=\"larchquit.*/>|${defaultquit}|" \
+                ${INSTALL}$1/.config/xfce4/desktop/menu.xml
+
+        cp /.livesys/xfce4-session.rc ${INSTALL}$1/.config/xfce4-session
+        cp /.livesys/bash_profile ${INSTALL}$1/.bash_profile
+    fi
+}
+
+for hd in $( cat ${INSTALL}/etc/passwd | cut -d':' -f6 | grep '^/home/' ) \
+        /root /etc/skel; do
+    replacequit ${hd} &>/dev/null
+done
+#***************************************************#

@@ -1,0 +1,7 @@
+#!/bin/bash
+#
+# /etc/rc.local: Local multi-user startup script.
+#
+
+# Restore saved sound volume, etc.
+alsactl restore

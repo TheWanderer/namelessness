@@ -1,0 +1,162 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html>
+
+<head>
+  <meta content="text/html;charset=UTF-8" http-equiv="Content-Type" />
+  <title>larch session saving</title>
+  <meta content="gradgrind" name="author" />
+</head>
+
+<body>
+
+<table style="text-align: left; width: 100%;" border="1" cellpadding="2" cellspacing="2">
+  <tbody>
+    <tr>
+      <td><a href="larch_fstab.html">Previous: /etc/fstab</a></td>
+
+      <td><a href="larch_docindex.html">Table of Contents</a></td>
+
+      <td><a href="larch_ssh.html">Next: ssh access</a></td>
+    </tr>
+  </tbody>
+</table>
+
+<br />
+
+<h1><big>larch</big> &ndash; a do-it-yourself live <em>Arch Linux</em> CD</h1>
+
+<img style="border: 0px solid ; width: 320px; height: 320px;" alt="" src="larch1.jpg"
+  name="graphics1" align="right" hspace="10" vspace="10" />
+<br /><br />
+
+<h2>Saving a session back to the boot device (or even somewhere else)</h2>
+
+<p>An easy way to create a customized live-USB-stick is to start from an
+existing one, make whatever changes you like, and then save the result back to
+the USB-stick.
+</p>
+
+<h3><a name="overlays"></a>Overlay archives, <strong>overlay.ovl</strong> and
+<strong>mods.sqf</strong></h3>
+
+<p>In <em>larch</em> the <em>overlay</em> file-system (in the
+<em>compressed</em> file 'overlay.ovl') can be rebuilt
+from the state of the live system when it shuts down.
+This is handled primarily by the script <strong>/opt/larch-live/session-save/saveovl</strong>, which is
+called from the customized shutdown function.
+If the medium is writable and contains a file 'larch/save', the user is offered the possibility of
+rewriting the overlay archive, thus saving the current state.
+</p>
+
+<p>The main overlay archive (<strong>overlay.ovl</strong>) is unpacked into memory
+at boot and repacked when saving the session at shutdown. When this archive grows
+too large it will reduce the amount of available memory, perhaps to an unacceptable extent.
+It will also lengthen boot and shutdown times. To counter this, it is possible to merge the
+overlay archive into the middle <em>union</em> layer in <strong>mods.sqf</strong> (which is
+normally not copied to memory), thus restoring the rapid load and save times
+for <strong>overlay.ovl</strong>, and maximizing the available memory. I call this process
+'overlay merging', and it is offered as a shutdown option.
+It takes longer to execute than a normal session save, but from larch version 5.2
+a new <em>aufs</em> option allows the merging to be done quicker than it was
+previously and without significant extra memory requirements. In this version
+a separate <em>aufs</em> union of the two overlay layers is mounted in which
+the whiteouts are visible. This union can then be squashed directly, without
+requiring the new, merged overlay to be rebuilt in memory. As it is a feature
+of <em>aufs</em>, overlay merging is no longer supported for <em>unionfs</em>
+(note that <em>unionfs</em> is at present not actively supported in <em>larch</em>
+anyway).
+</p>
+
+<h3><a name="var_files"></a>Special places in /var</h3>
+
+<p>It was considered undesirable to include some things in the '/var' directory
+in the session saves, primarily because of the space they occupy. Firstly,
+the standard <em>pacman</em> package cache, '/var/cache/pacman/pkg' - if you
+do want to save your cache, you should either handle this manually or set
+up another location using 'CacheDir' in /etc/pacman.conf'. Also the log files
+(in '/var/log') and '/var/tmp' (temporary files, like '/tmp') are not saved.
+</p>
+
+<h3><a name="upd_packages"></a>Updating packages</h3>
+
+<p>It should be possible to include package addition and removal in the list
+of customizations undertaken using this method, but there are some limitations. Apart from
+size considerations (the top level overlay is unpacked into memory at boot), there is also
+a limitation connected with the kernel. Essentially, the kernel and its modules may not
+be updated. <strong>If you do this, you may well make a mess of your system</strong>.
+In other words, be very careful with 'pacman -Su' - only upgrade selected packages.
+</p>
+<p>The reason for this is that the kernel is not contained within the
+squashed file-system, but is held separately on the boot medium, while its modules
+are contained in the squashed system and also in the initramfs. Updating these is not
+impossible (if booting from a writable medium), but <em>pacman</em> cannot do it and
+it is not straightforward (e.g. using a CD to boot to a USB-stick on a computer not
+supporting USB boot would additionally need a new CD). A complete rebuild of the live
+system might be a better approach. And using 'larchify' it should even be possible to
+perform such a rebuild from within the running live system.
+</p>
+
+<h3><a name="de-Act"></a>Activating and deactivating the session-saving feature</h3>
+
+<p>As mentioned above, for this feature to be available, there must be a file with
+the name 'save' in the boot medium's 'larch' directory.
+</p>
+
+<h3><a name="custom"></a>Customizing the behaviour using scripts</h3>
+
+<p>Some aspects of the session saving can be customized by writing scripts to
+override the default behaviour. These scripts are (in general) kept on the boot
+medium, in the 'larch' directory. As these are shell scripts and their use requires
+some knowledge of the inner workings of the <em>larch</em> live system, it will
+almost certainly be necessary to read the existing <em>larch</em> scripts where the
+custom scripts are 'sourced' if you want to
+write your own scripts to change the behaviour of the <em>larch</em> live system.
+</p>
+<ul>
+  <li><strong>session-save</strong>
+    <p>Used in <strong>/opt/larch-live/session-save/saveovl</strong>. This script can be
+    used to customize the creation of the new overlay archive, e.g. by
+    specifying a new location. The default is 'overlay.ovl' on the boot medium.
+    </p>
+  </li>
+  <li><strong>save-menu</strong>
+    <p>Used in <strong>/opt/larch-live/session-save/saveovl</strong>. This script can be
+    used to further customize the creation of the new overlay archive, e.g. by
+    providing an alternative session save menu. Note that if the
+    <strong>session-save</strong> script specified an alternative device path
+    for saving the overlay, this script will be sought in the 'larch' directory
+    on that path.
+    </p>
+  </li>
+  <li><strong>merge-adjust</strong>
+    <p>Used in <strong>/opt/larch-live/session-save/merge_overlay</strong>. This script can be
+    used to further customize aspects of the overlay merging process. Note that if the
+    <strong>session-save</strong> script specified an alternative device path
+    for saving the overlay, this script will be sought in the 'larch' directory
+    on that path.
+    </p>
+  </li>
+  <li><strong>boot-init</strong>
+    <p>In initramfs hook <strong>larch3</strong>. This script allows adjustment of
+    the overlay handling during the boot process, e.g. getting them from another
+    path.
+    Note that the shell environment here is that of the initramfs and thus
+    very limited.
+    </p>
+  </li>
+</ul>
+
+<table style="text-align: left; width: 100%;" border="1" cellpadding="2" cellspacing="2">
+  <tbody>
+    <tr>
+      <td><a href="larch_fstab.html">Previous: /etc/fstab</a></td>
+
+      <td><a href="larch_docindex.html">Table of Contents</a></td>
+
+      <td><a href="larch_ssh.html">Next: ssh access</a></td>
+    </tr>
+  </tbody>
+</table>
+
+</body>
+</html>

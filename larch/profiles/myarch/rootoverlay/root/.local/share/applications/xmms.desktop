@@ -1,0 +1,9 @@
+[Desktop Entry]
+Encoding=UTF-8
+Name=XMMS
+GenericName=Music Player
+Comment=Play music Files and Streams
+Exec=xmms
+StartupWMClass=xmms
+Icon=audio_player.png
+Type=Application

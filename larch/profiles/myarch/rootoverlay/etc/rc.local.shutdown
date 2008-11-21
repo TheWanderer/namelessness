@@ -1,0 +1,7 @@
+#!/bin/bash
+#
+# /etc/rc.local.shutdown: Local shutdown script.
+#
+
+# Save sound volume, etc.
+alsactl store

@@ -1,0 +1,140 @@
+#! /bin/bash
+#
+# larchify
+#
+# Author: Michael Towers <gradgrind[at]online[dot]de>
+#
+# This file is part of the larch project.
+#
+#    larch is free software; you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation; either version 2 of the License, or
+#    (at your option) any later version.
+#
+#    larch is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with larch; if not, write to the Free Software Foundation, Inc.,
+#    51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+#
+#----------------------------------------------------------------------------
+# 2008.02.13
+
+# Default target directory:
+INSTLDIR=larchroot
+
+APP="$( basename $0 )"
+# Get path to larch base directory, via the location of this script
+FULLPATH="$( readlink -f $0 )"
+SCRIPTDIR="$( dirname ${FULLPATH} )"
+LARCHDATA="$( dirname ${SCRIPTDIR} )"
+
+startdir=$( pwd )
+# cd to ensure that the following test works even if '.' is in PATH
+cd /
+apppath="$( which ${APP} 2>/dev/null )"
+if [ $? -ne 0 ] || [ "${apppath}" != "${FULLPATH}" ]; then
+    PATH=${SCRIPTDIR}:${PATH}
+fi
+cd ${startdir}
+
+usage () {
+    echo
+    echo "Usage:"
+    echo "  ${APP} -h     # Show this message"
+    echo
+    echo "  ${APP} [-irugf] [-p <profile directory>] [<target directory>]"
+    echo
+    echo "          -p    Use the 'profile' in the given directory."
+    echo "                The default is the directory 'profile' in the"
+    echo "                current directory, if it exists. A build without"
+    echo "                a profile is also, in principle, possible."
+    echo "          -i    Only rebuild iso (or install to USB-stick),"
+    echo "                don't regenerate CD data"
+    echo
+    echo "          -r    Reuse old system and home sqfs"
+    echo "          -u    Don't build iso, but install to USB-stick instead"
+    echo "          -g    Use GRUB bootloader (default is isolinux/syslinux)"
+    echo
+    echo "          -f    No interaction. (not recommended)"
+    echo "                The script will just plough straight on and destroy"
+    echo "                your file-system without first asking."
+    echo
+    echo "${APP} builds a larch live CD / live USB-stick from the Arch Linux"
+    echo "installation in <target directory>. The default target directory"
+    echo "(which can also be a symlink) is 'larchroot' in the current"
+    echo "working directory."
+    echo
+    echo "A profile is a directory containing all the necessary"
+    echo "configuration details for a larch build. See documentation"
+    echo "and examples."
+    echo
+    exit
+}
+
+PROFILE=""
+DONTASK=""
+USB=""
+GRUB=""
+REISO=""
+REBUILD=""
+REUSE=""
+while getopts ":p:irugf" Option
+do
+  case ${Option} in
+    p ) PROFILE="$( readlink -f ${OPTARG} )" ;;
+    i ) REISO="-i" ;;
+    r ) REUSE="-r" ;;
+    u ) USB="-u" ;;
+    g ) GRUB="-g" ;;
+    f ) DONTASK="-f" ;;
+    * ) usage ;;
+  esac
+done
+shift $((${OPTIND} - 1))
+if [ -n "$1" ]; then
+    INSTLDIR="$1"
+fi
+
+if [ -d "${INSTLDIR}" ]; then
+    if [ "${INSTLDIR}" = "/" ]; then
+        INSTLDIR=""
+    else
+        INSTLDIR=$( readlink -f ${INSTLDIR} )
+    fi
+else
+    echo "ERROR: no target directory supplied"
+    usage
+fi
+LARCHBUILD="${INSTLDIR}/.larch"
+
+if [ -z "${PROFILE}" ]; then
+    if [ -d ${startdir}/profile ]; then
+        PROFILE=${startdir}/profile
+    elif [ -z "${DONTASK}" ]; then
+        read -p "// Build without a profile? [y/N]: " ans
+        # Await yes or no
+        if [ -z "$( echo ${ans} | grep '^ *[yY]' )" ]; then exit 0; fi
+        echo
+    fi
+elif ! [ -d ${PROFILE} ]; then
+    echo "ERROR: profile '${PROFILE}' not found "
+    usage
+fi
+
+# test if the script is started by root user. If not, exit
+if [ $UID -ne 0 ]; then
+    echo "Only root can run ${APP}"; exit 1
+fi
+
+# Get live CD build functions
+. ${LARCHDATA}/buildlive
+
+if [ -n "${REISO}" ]; then
+    buildiso
+else
+    mklive
+fi

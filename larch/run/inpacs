@@ -1,0 +1,309 @@
+#! /bin/bash
+#
+# inpacs -  install Arch Linux using pacman
+#
+# Author: Michael Towers <gradgrind[at]online[dot]de>
+#
+# This file is part of the larch project.
+#
+#    larch is free software; you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation; either version 2 of the License, or
+#    (at your option) any later version.
+#
+#    larch is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with larch; if not, write to the Free Software Foundation, Inc.,
+#    51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+#
+#----------------------------------------------------------------------------
+#2008.10.10
+
+# Note that this has quite a few differences to 'pacin' (now deprecated).
+# Read the usage blurb carefully, for example the options -c, -a (changed
+# defaults), and -x (the format of the veto file has changed slightly).
+
+
+# Working directory:
+TMPDIR=/tmp/inpacs$$
+# File containing (filtered) list of base packages + added packages
+basepacks=${TMPDIR}/basepacks
+
+APP="$( basename $0 )"
+
+exitfunc () {
+    # Remove temporary files
+    rm -rf ${TMPDIR}
+    exit $1
+}
+
+usage () {
+    echo
+    echo "Usage:"
+    echo "  ${APP}    [-k <path to pacman configuration file> ]"
+    echo "            [-a <addedpacksfile>]"
+    echo "            [-c <package cache directory>]"
+    echo "            [-b <path to base package list file>]"
+    echo "            [-x <path to vetofile>]"
+    echo "            [-y <path to pacman database directories>]"
+    echo "            [-P <path to pacman executable>]"
+    echo "         <install path>"
+    echo
+    echo "          -k    Use the given file instead of /etc/pacman.conf"
+    echo
+    echo "          -a    Use list of packages in <addedpacksfile> (path/to/file)"
+    echo "                for 2nd install phase. If not specified, only do"
+    echo "                base installation"
+    echo
+    echo "          -c    Use given package cache (on host). Default is to"
+    echo "                create '${CACHE}' on the target and"
+    echo "                use this. If an empty path ('') is given, use the"
+    echo "                default on the host."
+    echo
+    echo "          -b    Use the packages (name only, one per line) in this"
+    echo "                file as the base set, installed during the first stage."
+    echo "                By default this list will be extracted from the"
+    echo "                file 'packages.txt' in the 'core' repository."
+    echo
+    echo "          -x    Remove the packages (name only, one per line)"
+    echo "                in this file from the list of base packages"
+    echo "                before doing the first installation stage."
+    echo
+    echo "          -y    Don't perform 'pacman -Sy' before installing,"
+    echo "                but copy the pacman database directories from"
+    echo "                the given parent directory."
+    echo
+    echo "          -P    Use the given pacman executable (possibly"
+    echo "                useful on non-Arch systems)."
+    echo
+    echo "${APP} will do an automated Arch Linux installation to the given"
+    echo "installation directory by installing one or two lists of packages."
+    echo "It only installs the packages, without configuration."
+    echo
+    echo "Initially it installs the set of base packages (though this set"
+    echo "is fully configurable). It can then, optionally, install a further"
+    echo "set of additional packages."
+    echo
+    echo "Where it gets the packages from is fully configurable (via"
+    echo "the pacman configuration file and the package cache location)"
+    echo "By previously mounting a remote package cache using sshfs or"
+    echo "NFS it is also possible to use that."
+    echo
+    exitfunc
+}
+
+# Default package cache (this is a statement, not a configuration, so
+# do not change it!)
+CACHE="/var/cache/pacman/pkg"
+# Default pacman db path (this is a statement, not a configuration, so
+# do not change it!)
+DBPATH="/var/lib/pacman"
+
+# Default package cache, on the target
+TARGETCACHE="${CACHE}"
+# A host or remote package cache:
+HOSTCACHE=""
+# Absolute /path/to/file containing list of packages for 2nd install phase:
+ADDEDPACKS=""
+# Source file for base package list:
+BASEPACKSFILE=""
+# Source file for list of vetoed base packages:
+VETOFILE=""
+# Source directory for pacman database directories:
+DBDIR=""
+# pacman executable:
+PACMANX="pacman"
+# pacman configuration file
+PACMANK="/etc/pacman.conf"
+
+checkfile ()
+{
+    f=$( readlink -m $1 )
+    if ! [ -f "${f}" ]; then
+        echo "ERROR: File doesn't exist: ${f}"
+        exitfunc
+    fi
+}
+
+checkdir ()
+{
+    f=$( readlink -m $1 )
+    if ! [ -d "${f}" ]; then
+        echo "ERROR: Directory doesn't exist: ${f}"
+        exitfunc
+    fi
+}
+
+while getopts ":k:a:c:b:x:y:P:" Option
+do
+  case ${Option} in
+    k ) checkfile ${OPTARG}
+        PACMANK=${f} ;;
+    a ) checkfile ${OPTARG}
+        ADDEDPACKS=${f} ;;
+    c ) TARGETCACHE=""
+        if [ -n "${OPTARG}" ]; then
+            HOSTCACHE=${OPTARG}
+            checkdir ${HOSTCACHE}
+            HOSTCACHE=${f}
+        fi ;;
+    b ) checkfile ${OPTARG}
+        BASEPACKSFILE=${f} ;;
+    x ) checkfile ${OPTARG}
+        VETOFILE=${f} ;;
+    y ) checkdir ${OPTARG}
+        DBDIR=${f} ;;
+    P ) checkfile ${OPTARG}
+        PACMANX=${f} ;;
+    * ) usage ;;
+  esac
+done
+shift $((${OPTIND} - 1))
+INSTLDIR="$1"
+
+echo "INSTLDIR=${INSTLDIR}"
+echo "PACMANK=${PACMANK}"
+echo "ADDEDPACKS=${ADDEDPACKS}"
+echo "TARGETCACHE=${TARGETCACHE}"
+echo "HOSTCACHE=${HOSTCACHE}"
+echo "BASEPACKSFILE=${BASEPACKSFILE}"
+echo "VETOFILE=${VETOFILE}"
+echo "DBDIR=${DBDIR}"
+echo "PACMANX=${PACMANX}"
+echo
+
+if [ -d "${INSTLDIR}" ]; then
+    # This is not a brilliant test, but at least it will pick up
+    # data files in the destination directory, without being disturbed
+    # by sub-mounts.
+    if [ -n "$( find ${INSTLDIR} ! -type d )" ]; then
+        echo "ERROR: Installation directory (${INSTLDIR}) not empty"
+        exitfunc 1
+    fi
+else
+    echo "ERROR: Installation directory (${INSTLDIR}) does not exist"
+    echo
+    usage
+fi
+
+# test if the script is started by root user. If not, exit
+if [ $UID -ne 0 ]; then
+    echo "Only root can run ${APP}"; exitfunc 1
+fi
+
+echo "//"
+echo "// Installing Arch Linux to directory ${INSTLDIR}"
+
+PACMAN="${PACMANX} --config ${PACMANK} --noconfirm"
+
+rm -rf ${TMPDIR}
+mkdir -p ${TMPDIR}
+
+# Helper function for installing a list of packages
+doInstall() {
+    mkdir -p ${INSTLDIR}/sys
+    mkdir -p ${INSTLDIR}/proc
+    mount --bind /sys ${INSTLDIR}/sys
+    mount --bind /proc ${INSTLDIR}/proc
+    ${PACMAN} -r ${INSTLDIR} -S $( cat $1 )
+    RET=$?
+    umount ${INSTLDIR}/proc
+    umount ${INSTLDIR}/sys
+    if [ ${RET} -ne 0 ]; then
+        echo "//"
+        echo "// Package installation from $1 FAILED."
+        echo "//"
+        return 1
+    fi
+}
+
+if [ -n "${TARGETCACHE}" ]; then
+    # This redirects the package cache to the install target
+    # (change in pacman-3.1)
+    PACMAN="${PACMAN} --cachedir ${INSTLDIR}${TARGETCACHE}"
+elif [ -n "${HOSTCACHE}" ]; then
+    # This redirects the package cache to an existing non-standard one
+    PACMAN="${PACMAN} --cachedir ${HOSTCACHE}"
+fi
+
+mkdir -p ${INSTLDIR}${DBPATH}/sync
+if [ -n "${DBDIR}" ]; then
+    echo "//"
+    echo "// Fetching package dbs from: ${DBDIR}"
+    for repo in $( grep "^\[.*\]" ${PACMANCONF} | sed "s|\[\(.*\)\]|\1|"); do
+        if [ "${repo}" != "options" ]; then
+            echo "      ... ${repo}"
+            cp -a ${DBDIR}/sync/${repo} ${INSTLDIR}${DBPATH}/sync
+        fi
+    done
+    echo "//"
+else
+    echo "//"
+    echo "// Synchronising package dbs **************"
+    echo "//"
+    ${PACMAN} -r ${INSTLDIR} -Sy
+fi
+
+########## GET LIST OF BASE PACKAGES
+
+echo "//"
+echo "// ** Getting base package list ..."
+if [ -n "${BASEPACKSFILE}" ]; then
+    echo "//    from: ${BASEPACKSFILE}"
+    BASEPKGS=$( cat ${BASEPACKSFILE} | grep -v "#" )
+else
+    BASEPKGS=$( ${PACMAN} -r ${INSTLDIR} -Sg base | sed 's|^base *||')
+fi
+echo "//"
+
+########## LIST OF BASE PACKAGES NOW IN ${BASEPKGS}
+
+########## FILTER LIST OF BASE PACKAGES
+
+# Build basepacks by filtering BASEPKGS
+: > ${basepacks}
+#
+# Filter out vetoed packages
+for p in ${BASEPKGS}; do
+    if [ -z "${VETOFILE}" ] || \
+            ! grep "^[ ]*${p}[ ]*\$" ${VETOFILE} &>/dev/null; then
+        echo ${p} >> ${basepacks}
+    fi
+done
+
+########## FILTERED BASE PACKAGE LIST NOW IN FILE ${basepacks}
+
+if [ -n "${ADDEDPACKS}" ]; then
+    echo "//"
+    echo "// ***** Adding additional packages to install list *****"
+    echo "//"
+    for p in $( cat ${ADDEDPACKS} | grep -v "#" ); do
+        if ! grep "^[ ]*${p}[ ]*\$" ${basepacks} &>/dev/null; then
+            echo ${p} >> ${basepacks}
+        fi
+    done
+fi
+
+echo "//"
+echo "// ************** Installing selected packages **************"
+echo "//"
+
+#+++ FIX for missing /dev/null at beginning of installation +++
+#      - can be removed when fixed upstream
+mkdir -p ${INSTLDIR}/dev
+mknod -m 666 ${INSTLDIR}/dev/null c 1 3
+#--- (added 2008.09.14) ----------------------------
+
+doInstall ${basepacks}
+if [ $? -ne 0 ]; then exitfunc 1; fi
+
+echo "//"
+echo "// *** inpacs finished! Arch Linux has been installed to ${INSTLDIR} ***"
+echo "// It is, however, pretty unconfigured ..."
+echo "//"
+
+exitfunc

@@ -1,0 +1,117 @@
+2008.10.10
+Version 5.3.9
+larch-setup now creates relative (instead of absolute) symlinks.
+Workaround in inpacs for absence of /dev/null at beginning of installation
+(Arch bug). 
+larch-live package updated to version 5.3.4 for initscripts-2008.09-2
+and moved loading of loop module to larch1 hook, because of timing problems.
+
+2008.08.10
+Version 5.3.8
+Added pacman-packed.tar.gz to repository, a self-contained pacman package,
+including the libraries it needs to run. So now building on non-Arch
+systems shuold work again.
+Adjusted larch-setup to handle this new package.
+'mirrorlist' now has '@carch@', which getPackageServer must handle (done
+in PKGBUILD)
+
+2008.08.09
+Version 5.3.7
+The packages.txt file is no longer supplied in Arch repositories, so inpacs
+now gets the list of base packages using (something like) 'pacman -Sg base'.
+As of pacman-3.2 there is no longer a static build, so building larch systems
+on non-Arch boxes will no longer work:(
+Tweaked xmaxi profile.
+
+2008.07.30
+Version 5.3.6
+Remove unmaintained kde profile, replace mc-utf8 by mc in addedpacks
+
+2008.06.22
+Version 5.3.5
+Fix mklarch for building on non-Arch system:
+ - need to create package cache, otherwise inpacs complains.
+ - tweak pacman.conf configuration concerning 'Include =' lines.
+ - usb2bootiso needs bash (#!/bin/bash, not #!/bin/sh)
+ - xpack (and existing .xpk files) fix (bash, not sh, and -n option to tail)
+Try to overcome problems with usb-stick creation when hal remounts device
+after formatting, by adding umount command.
+
+2008.06.07
+Version 5.3.4
+Removed warnings about kconfig (as this is no longer included in Arch kernels.
+Added check for mkisofs on host at beginning of buildlive (if building iso).
+Added check for syslinux on target at beginning of buildlive (if not using
+GRUB).
+Minor profile tweaks.
+
+2008.05.15
+Version 5.3.2, adjusted initscripts approach so that it doesn't require a
+custom initscripts package. Now rc.sysinit and rc.shutdown are replaced (in
+buildlive) by larch versions which are compatible with the standard versions.
+When larch-live is installed, the standard functions will be replaced by
+larch functions. On installation using larchin larch-live will be removed
+so the behaviour reverts to standard Arch behaviour, although the rc scripts
+have been changed. But in any case the originals are saved so that they can
+be restored on installation with larchin.
+
+Changed handling of pacman.conf slightly. When there is a pacman.conf in the
+profile (base directory, not overlay), this will be copied to the working
+directory and used by mklarch, even if there was already a version in the
+working directory. The pacman.conf in the live system will be this version
+if built using mklarch, otherwise the existing version. However an
+'IgnorePkg' line is added for kernel26, aufs and initscripts. Packages
+listed in the 'noupdate' file in the profile, will also be added. This
+line will be removed on installation using larchin.
+
+2008.04.27
+Version 5.3.0, new initscripts approach, replacing functions in
+/etc/rc.d/functions rather than replacing /etc/rc.sysinit and
+/etc/rc.shutdown. At present this requires a custom initscripts package.
+
+2008.04.21
+Version 5.2.2, added usb2iso, a fairly primitive script to make an iso from
+a larch usb-stick. It also works from a running larch system, but only on
+systems with a lot of memory.
+
+2008.04.05
+version 5.2.1, slight reworking of overlay handling in profiles - now files
+owned by root:root do not have to be in overlay.xpk, they can be held within
+directory 'rootoverlay', and their ownership will be changed automatically.
+Files to be copied to /.livesys at boot are now in larch/copy.
+Added larchquit.py to larch-live - special larch quit/logout gui, allows
+selecting session-save options and also autologin user before quitting desktop,
+included it in xmini menu/panel.
+Other tweaks to xmini profile.
+
+2008.02.27
+Incompatible changes. WARNING!
+With version 5.2 the init system has changed, in particular a custom inittab
+is now required, which means all old profiles are likely to fail (because of
+the /etc/inittab in the overlay).
+
+2008.02.19
+added desktop stuff for documentation
+
+2008.02.18
+version 5.1.3, bugfixes and work on profiles
+documentation updates
+
+2008.02.14
+Reorganization of directory layout,
+new 'larchin' hard disk installer with gui.
+larch version 5.1.0
+larch-live version 5.1.0
+larchin version 5.1.0
+
+2008.01.13
+Adjustments for changes in pacman-3.1, version 5.0.8
+
+2008.01.02
+Fixes for merging when file paths contain spaces (merge_overlay), version 5.0.7
+
+2008.01.02
+larch-5 (with simplified union structure, no CD/DVD session save) available
+for testing.
+
+Initial test release, version 5.0.6.

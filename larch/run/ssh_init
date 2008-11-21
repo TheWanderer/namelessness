@@ -1,0 +1,18 @@
+#! /bin/sh
+
+DESTDIR=$1
+echo
+echo "************** Generating ssh keys to ${DESTDIR}/etc/ssh **************"
+echo
+# ssh initialisation - done here so that it doesn't need to be done
+# when the cd boots
+if [ -x ${DESTDIR}/usr/sbin/sshd ]; then
+    # Do it on the newly built system, in case the host doesn't have ssh
+    mount --bind /dev ${DESTDIR}/dev
+    chroot ${DESTDIR} bin/sh -c "{\
+        /usr/bin/ssh-keygen -t rsa1 -N \"\" -f /etc/ssh/ssh_host_key >/dev/null;\
+        /usr/bin/ssh-keygen -t rsa -N \"\" -f /etc/ssh/ssh_host_rsa_key >/dev/null;\
+        /usr/bin/ssh-keygen -t dsa -N \"\" -f /etc/ssh/ssh_host_dsa_key >/dev/null;\
+        }"
+    umount ${DESTDIR}/dev
+fi

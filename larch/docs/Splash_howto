@@ -1,0 +1,35 @@
+Using vesamenu this is now much easier ...
+
+For the vesamenu, it is called a background image, rather than splash
+image, because the menu appears on top of it.
+All you need is a 640x480 image in png or jpg format (the default image
+in larch is called bkgd.jpg)!
+
+=======================================================================
+
+But here are the old instructions, just in case ... (the utility programs
+are in the 'syslinux' package):
+
+Splash screen for isolinux/syslinux
+-----------------------------------
+
+This could be easier ...
+Anyway, it needs to be in a particular format. 640 pixels wide and quite
+a bit less than 480 pixels high (to leave space for the boot text).
+Then it may not use more than 16 colours. You can reduce the colour
+depth by setting indexed mode in the GIMP (image - mode). It may be
+sensible to use only 14 or 15 colours (to leave something for the
+text?) - but I didn't really investigate this further. I reduced
+my image to 14 colours.
+Then you can export it to a .ppm file, which serves as input to the
+perl script ppmtolss16, (which comes from the syslinux tarball -
+its inverse is lss16toppm, which is also in there):
+
+./ppmtolss16 < splash.ppm > splash.lss
+
+To test this, convert it back and take a look at the result:
+
+./lss16toppm < splash.lss > test.ppm
+
+Just replace the existing splash.lss file (in cd-root/isolinux) with your
+version.

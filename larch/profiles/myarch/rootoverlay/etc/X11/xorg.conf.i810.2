@@ -1,0 +1,67 @@
+Section "ServerLayout"
+	Identifier     "X.org Configured"
+	Screen      0  "Screen0" 0 0
+EndSection
+
+Section "Device"
+        ### Available Driver options are:-
+        ### Values: <i>: integer, <f>: float, <bool>: "True"/"False",
+        ### <string>: "String", <freq>: "<f> Hz/kHz/MHz"
+        ### [arg]: arg optional
+        #Option     "NoAccel"            	# [<bool>]
+        #Option     "SWcursor"           	# [<bool>]
+        #Option     "ColorKey"           	# <i>
+        #Option     "CacheLines"         	# <i>
+        #Option     "Dac6Bit"            	# [<bool>]
+        #Option     "DRI"                	# [<bool>]
+        #Option     "NoDDC"              	# [<bool>]
+        #Option     "ShowCache"          	# [<bool>]
+        #Option     "XvMCSurfaces"       	# <i>
+        #Option     "PageFlip"           	# [<bool>]
+	Option      "DRI" "False"
+	#Option      "AccelMethod" "exa"
+	#Option      "MigrationHeuristic" "greedy"
+	#Option      "ExaNoComposite" "False"
+	Identifier  "Card0"
+	Driver      "intel"
+EndSection
+
+Section "Monitor"
+	Identifier  "Monitor0"
+	HorizSync   30.0 - 65.0
+	VertRefresh 50.0 - 75.0
+EndSection
+
+Section "Screen"
+	Identifier "Screen0"
+	Device     "Card0"
+	Monitor    "Monitor0"
+	DefaultDepth 16
+	SubSection "Display"
+		Viewport   0 0
+		Depth     1
+	EndSubSection
+	SubSection "Display"
+		Viewport   0 0
+		Depth     4
+	EndSubSection
+	SubSection "Display"
+		Viewport   0 0
+		Depth     8
+	EndSubSection
+	SubSection "Display"
+		Viewport   0 0
+		Depth     15
+	EndSubSection
+	SubSection "Display"
+		Viewport   0 0
+		Depth     16
+		Modes     "1024x768" "800x600"
+	EndSubSection
+	SubSection "Display"
+		Viewport   0 0
+		Depth     24
+	EndSubSection
+EndSection
+
+

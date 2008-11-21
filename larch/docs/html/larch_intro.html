@@ -1,0 +1,128 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html>
+
+<head>
+  <meta content="text/html;charset=UTF-8" http-equiv="Content-Type" />
+  <title>larch introduction</title>
+  <meta content="gradgrind" name="author" />
+</head>
+
+<body>
+
+<table style="text-align: left; width: 100%;" border="1" cellpadding="2" cellspacing="2">
+  <tbody>
+    <tr>
+      <td><a href="larch_docindex.html">Table of Contents</a></td>
+
+      <td><a href="larch_features.html">Next: Features</a></td>
+    </tr>
+  </tbody>
+</table>
+
+<br />
+
+<h1><big>larch</big> &ndash; a do-it-yourself live <em>Arch Linux</em> CD</h1>
+
+<img style="border: 0px solid ; width: 320px; height: 320px;" alt="" src="larch1.jpg"
+  name="graphics1" align="right" hspace="10" vspace="10" />
+<br /><br />
+
+<h2>Introduction</h2>
+
+<p><em>larch</em> is a collection of scripts designed around the creation and
+use of live CD/DVD/USB-stick versions of <em>Arch Linux</em>.
+</p>
+
+<p>One design aim was easy customization, so that even relatively inexperienced
+users could build personalized live CDs (etc.), containing whatever packages they
+wanted and with their own personal configurations. The resulting medium should
+also be usable for installation purposes, so that one has a customized
+<em>Arch Linux</em> installation/rescue medium. As the content can be chosen
+freely, a comfortable working environment is possible - in contrast to
+the rather Spartan standard <em>Arch</em> installation CD.
+</p>
+
+<p><em>larch</em> also offers a flexible approach to building your live media.
+You can use 'profiles' to determine what gets installed, and how it is
+configured. The advantage of this method is that all your specifications are
+kept together in a folder which can be used to rebuild the same or a similar
+system at a later date. Alternatively you can do a normal <em>Arch Linux</em>
+installation (if there is such a thing!) and then make a live medium from this.
+You can even 'livify' your existing installation (though it might be worth
+tidying it up a bit first ...).
+</p>
+
+<p><em>Squashfs</em> offers convenient compression of the data on the CD so that
+up to about 2 GB of code can be included on a 700 MB CD. <em>aufs</em> (a
+'unification' file system, originally based on <em>unionfs</em>) offers
+the ability to write to all directories even though
+the CDROM is read-only, which allows such fancy stuff as installation
+of new software packages to the running live system. Using <em>aufs</em>
+you could do, say, 'pacman -S fluxbox' and <em>fluxbox</em> would be
+installed. The limit to the amount of overwriting is determined by the size of
+the available memory.
+</p>
+
+<p>All this would normally be gone when you reboot as the changes are
+really only stored in memory. However, thanks to various technical wizardry, it
+is also possible (on suitable media) to save any changes you make while running
+the live system back to the medium on shutdown.
+</p>
+
+<p>Hardware detection is provided by the same <em>udev</em> approach as is used
+in a standard <em>Arch Linux</em> system.
+</p>
+
+<p>The <em>larch</em> project comprises several components. The scripts for
+building a larch live medium are in the <em>larch</em> package, which need not
+itself be installed in the live system, though it may be useful. Scripts and
+data for the live environment are provided in the <em>larch-live</em> package,
+which must be installed in the live system. There is also an optional installer
+(<em>larchin</em>, written in python and bash, with a <em>GTK</em> interface) which
+can install the live system to hard disk, providing a convenient way to install a
+ready-configured <em>Arch Linux</em> system.
+</p>
+
+<p>I have tried to maintain the distribution-independence of the
+<em>larch</em> scripts, so that they can be used on other <em>GNU/Linux</em> systems -
+you shouldn't need an <em>Arch Linux</em> installation in order to build a <em>larch</em>
+live medium, the dependencies (e.g. <em>bash</em>, <em>wget</em>,
+<em>mkisofs</em> ) should be satisfied on pretty well any <em>GNU/Linux</em> system
+(and a static version of <em>pacman</em> can be downloaded). In other words,
+it should not be difficult to generate your own customized <em>larch</em>
+CD on pretty well any <em>GNU/Linux</em> system.
+But I must admit that this feature hasn't been tested much.
+</p>
+
+<p>As with most stuff around <em>Arch Linux</em>
+it's not really designed for beginners - you should know your
+way around a <em>GNU/Linux</em> system (preferably <em>Arch</em>!), and have at least a
+minimal idea of running command-line stuff and editing configuration
+files. In any case, I hope that the
+documentation will be clear enough to help anyone who wants to exploit
+<em>larch</em> to the full (feedback is welcome!).</p>
+
+<p><b>Requirement:</b>
+You need quite a lot of space to create an <em>Arch Linux</em> live CD system - to build a
+700MB CD image you'll need up to about 4GB. That is because a complete <em>Arch Linux</em>
+system is installed, then a compressed ('squashed') verion is made, and then
+a CD image (iso). Building for a USB-stick requires slightly less space, as the
+iso-image is not built.
+</p>
+
+<br /><br />
+
+<table style="text-align: left; width: 100%;" border="1" cellpadding="2" cellspacing="2">
+  <tbody>
+    <tr>
+
+      <td><a href="larch_docindex.html">Table of Contents</a></td>
+
+      <td><a href="larch_features.html">Next: Features</a></td>
+
+    </tr>
+  </tbody>
+</table>
+
+</body>
+</html>

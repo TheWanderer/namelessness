@@ -1,0 +1,108 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html>
+<head>
+  <meta content="text/html;charset=UTF-8" http-equiv="Content-Type">
+  <title>larch quick start</title>
+  <meta content="gradgrind" name="author">
+</head>
+
+<body>
+
+<table style="text-align: left; width: 100%;" border="1" cellpadding="2" cellspacing="2">
+  <tbody>
+    <tr>
+      <td><a href="larch_features.html">Previous: Features</a></td>
+
+      <td><a href="larch_docindex.html">Table of Contents</a></td>
+
+      <td><a href="larch_overview.html">Next: Larch Overview</a></td>
+    </tr>
+  </tbody>
+</table>
+
+<br />
+
+<h1><big>larch</big>
+&ndash;
+a do-it-yourself live <em>Arch Linux</em> CD</h1>
+
+<img style="border: 0px solid ; width: 320px; height: 320px;" alt="" src="larch1.jpg"
+  name="graphics1" align="right" hspace="10" vspace="10" />
+<br /><br />
+
+<h2>Quick Start</h2>
+
+<br /><br />
+
+<p>A quick run through of the steps necessary to build your own <em>larch</em> CD.
+This should provide you with a working live CD, but to take full advantage of
+the flexibility offered by the <em>larch</em> build system you will probably need
+to consult the rest of the documentation.</p>
+
+<ul>
+   <li>At present there is only a repository for 'i686',
+   as I don't have a 64-bit machine (but testers are welcome to build their own
+   repository from svn - a simple script is provided).
+   </li>
+   <li>Download <a href="ftp://ftp.berlios.de/pub/larch/larch5.3/i686/larch-setup"><strong>larch-setup</strong></a>
+   to an empty working directory and run it (it is a shell script). This will in
+   turn download and unpack the current larch package, setting up symlinks so that
+   the build scripts can be run from this working directory.</li>
+   <li>Run './mklarch -h' to get a usage description.
+   </li>
+   <li>From now on you must be running as root, i.e. it's potentially dangerous stuff!
+   </li>
+   <li>You can then try building one of the example profiles, for example:
+      <pre>./mklarch -p larch/profiles/xmini</pre>
+   You can also adapt one of the example profiles to your own needs.
+   </li>
+   <li>  If you chose a delivered profile, the build should just run, apart from
+   asking for confirmation a few times.
+   </li>
+   <li>  For a custom build:
+     <ul>
+       <li>  Copy an example profile (from larch/profiles) to your working directory, giving it
+       an appropriate name.
+       </li>
+       <li>  Edit 'locale.gen' for your glibc locale needs.
+       </li>
+       <li>  Edit 'rcconfx', which contains just the changes to the default
+         /etc/rc.conf. Especially the locale and console
+         keyboard setting may be interesting.</li>
+       <li>  Editing the overlay (the set of files which are changed from the default
+         installation) might be a bit trickier, as permissions and ownerships must be
+         correct. Please read the relevant
+         <a href="larch_profiles.html">documentation</a>
+         before attempting this.</li>
+       <li>  OPTIONAL: If you want ssh access to your live system,
+         see <a href="larch_ssh.html">'ssh access'</a></li>
+     </ul>
+     before running <em>mklarch</em>.
+   <li>  Another possibility is to use <strong>larchify</strong> (run './larchify -h'
+   for a usage description) to 'livify' an existing <em>Arch Linux</em> installation, even
+   the currently running one. Certain packages must be installed, but then running
+   './larchify path/to/installation' should be
+   enough for a simple build. See <a href="larch_overview.html#existingSystem">
+   'Making a live CD from an existing <em>Arch</em> installation'</a> for more details.</li>
+   <li>  After a while, the iso for the CD should be ready for burning.</li>
+   <li>  Alternatively, you can put it on a USB-stick, by passing the '-u' option
+   to 'mklarch'.</li>
+   <li>  Share and Enjoy!</li>
+</ul>
+
+<table style="text-align: left; width: 100%;" border="1" cellpadding="2" cellspacing="2">
+  <tbody>
+    <tr>
+
+      <td><a href="larch_features.html">Previous: Features</a></td>
+
+      <td><a href="larch_docindex.html">Table of Contents</a></td>
+
+      <td><a href="larch_overview.html">Next: Larch Overview</a></td>
+
+    </tr>
+  </tbody>
+</table>
+
+</body>
+</html>

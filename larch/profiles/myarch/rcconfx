@@ -1,0 +1,18 @@
+#
+# patch file for /etc/rc.conf
+#
+
+LOCALE="en_US.utf8"
+HARDWARECLOCK="UTC"
+TIMEZONE="UTC"
+KEYMAP="us"
+
+MODULES=(floppy)
+
+HOSTNAME="larch5"
+
+USELVM="yes"
+
+eth0="dhcp"
+
+DAEMONS=(syslog-ng network dbus hal !slim sshd)
